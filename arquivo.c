@@ -2,61 +2,104 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Estrutura de dados para representar um cômodo da mansão
 typedef struct Sala {
-    char nome[50];
-    struct Sala *esq, *dir;
+    char nome[50];            // Nome da sala
+    struct Sala *esq;         // Caminho para a esquerda
+    struct Sala *dir;         // Caminho para a direita
 } Sala;
 
-// Cria uma nova sala
-Sala* novaSala(const char* nome) {
-    Sala* s = malloc(sizeof(Sala));
-    strcpy(s->nome, nome);
-    s->esq = s->dir = NULL;
-    return s;
+// Função para criar uma nova sala na memória
+Sala* criarSala(const char* nome) {
+    Sala* nova = (Sala*)malloc(sizeof(Sala));  // aloca memória
+    if (nova == NULL) {
+        printf("Erro ao alocar memória!\n");
+        exit(1);
+    }
+    strcpy(nova->nome, nome);   // copia o nome
+    nova->esq = NULL;           // inicialmente sem saídas
+    nova->dir = NULL;
+    return nova;
 }
 
-// Monta o mapa (árvore fixa)
+// Função para montar o mapa fixo da mansão
 Sala* montarMapa() {
-    Sala* h = novaSala("Hall de Entrada");
-    h->esq = novaSala("Biblioteca");
-    h->dir = novaSala("Sala de Jantar");
-    h->esq->esq = novaSala("Escritorio");
-    h->esq->dir = novaSala("Sala Secreta");
-    h->dir->esq = novaSala("Cozinha");
-    h->dir->dir = novaSala("Jardim de Inverno");
-    return h;
+    // Sala inicial
+    Sala* hall = criarSala("Hall de Entrada");
+
+    // Conexões principais
+    hall->esq = criarSala("Biblioteca");
+    hall->dir = criarSala("Sala de Jantar");
+
+    // Caminhos da biblioteca
+    hall->esq->esq = criarSala("Escritorio");
+    hall->esq->dir = criarSala("Sala Secreta");
+
+    // Caminhos da sala de jantar
+    hall->dir->esq = criarSala("Cozinha");
+    hall->dir->dir = criarSala("Jardim de Inverno");
+
+    return hall; // retorna a raiz da árvore
 }
 
-// Exploração do mapa
+// Função principal do jogo: exploração
 void explorar(Sala* atual) {
-    char op;
+    char escolha;
+
     while (1) {
-        printf("\nVoce esta em: %s\n", atual->nome);
-        if (!atual->esq && !atual->dir) { printf("Fim da exploracao!\n"); break; }
+        // Mostra o nome da sala atual
+        printf("\nVocê está em: %s\n", atual->nome);
 
-        if (atual->esq) printf("[e] %s  ", atual->esq->nome);
-        if (atual->dir) printf("[d] %s  ", atual->dir->nome);
-        printf("[s] Sair\nEscolha: ");
-        scanf(" %c", &op);
+        // Se não houver saídas, acaba o jogo
+        if (atual->esq == NULL && atual->dir == NULL) {
+            printf("Esta sala não possui mais saídas. Fim da exploração!\n");
+            break;
+        }
 
-        if (op=='e' && atual->esq) atual=atual->esq;
-        else if (op=='d' && atual->dir) atual=atual->dir;
-        else if (op=='s') { printf("Exploracao encerrada.\n"); break; }
-        else printf("Opcao invalida!\n");
+        // Mostra opções de caminho disponíveis
+        printf("Opções de navegação:\n");
+        if (atual->esq != NULL) printf("  [e] Ir para %s\n", atual->esq->nome);
+        if (atual->dir != NULL) printf("  [d] Ir para %s\n", atual->dir->nome);
+        printf("  [s] Sair do jogo\n");
+
+        // Lê a escolha do jogador
+        printf("Escolha: ");
+        scanf(" %c", &escolha);
+
+        // Verifica para onde ir
+        if (escolha == 'e' && atual->esq != NULL) {
+            atual = atual->esq;  // vai para a esquerda
+        }
+        else if (escolha == 'd' && atual->dir != NULL) {
+            atual = atual->dir;  // vai para a direita
+        }
+        else if (escolha == 's') {
+            printf("Você encerrou a exploração.\n");
+            break;
+        }
+        else {
+            printf("Opção inválida! Tente novamente.\n");
+        }
     }
 }
 
-// Libera memória da árvore
-void liberar(Sala* r) {
-    if (!r) return;
-    liberar(r->esq);
-    liberar(r->dir);
-    free(r);
+// Função recursiva para liberar a memória da árvore
+void liberarMapa(Sala* raiz) {
+    if (raiz == NULL) return;
+    liberarMapa(raiz->esq);   // libera esquerda
+    liberarMapa(raiz->dir);   // libera direita
+    free(raiz);               // libera a sala atual
 }
 
 int main() {
+    // Monta o mapa fixo (árvore binária)
     Sala* mapa = montarMapa();
+
+    // Inicia a exploração a partir do hall
     explorar(mapa);
-    liberar(mapa);
+
+    // Libera toda a memória usada
+    liberarMapa(mapa);
+
     return 0;
 }
